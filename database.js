@@ -1,5 +1,32 @@
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./peminjaman.db');
+const path = require('path');
+const fs = require('fs');
+
+// Tentukan lokasi direktori berdasarkan environment
+const dbDir = process.env.NODE_ENV === 'production' 
+  ? '/app/data' 
+  : __dirname;
+
+// Pastikan direktori tempat database berada sudah dibuat sebelum file SQLite diakses
+if (!fs.existsSync(dbDir)) {
+  try {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log(`Direktori database berhasil dibuat di: ${dbDir}`);
+  } catch (err) {
+    console.error(`Gagal membuat direktori database (${dbDir}):`, err.message);
+  }
+}
+
+const dbPath = path.join(dbDir, 'peminjaman.db');
+
+// Inisialisasi koneksi SQLite
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Gagal terhubung ke database SQLite:', err.message);
+  } else {
+    console.log(`Berhasil terhubung ke database SQLite di: ${dbPath}`);
+  }
+});
 
 db.serialize(() => {
   // Tabel Barang
@@ -39,9 +66,13 @@ db.serialize(() => {
     )
   `);
 
-  // Isi data dummy barang jika belum ada
+  // Isi data awal barang jika masih kosong
   db.get("SELECT COUNT(*) as count FROM barang", (err, row) => {
-    if (row.count === 0) {
+    if (err) {
+      console.error("Gagal mengecek data barang:", err.message);
+      return;
+    }
+    if (row && row.count === 0) {
       const stmt = db.prepare("INSERT INTO barang (kode, nama, satuan, stok) VALUES (?, ?, ?, ?)");
       stmt.run("BRG-001", "Laptop Probook", "unit", 5);
       stmt.run("BRG-002", "Proyektor Epson", "unit", 3);
