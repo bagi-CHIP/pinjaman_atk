@@ -1,21 +1,25 @@
 {
-  "name": "sistem-peminjaman",
+  "name": "permintaan_atk",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Sistem Informasi Pengelolaan dan Permintaan ATK Kantor",
+  "main": "server.js",
   "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "express",
+    "sqlite3",
+    "atk",
+    "railway"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "body-parser": "^2.3.0",
-    "express": "^5.2.1",
-    "sqlite3": "^6.0.1"
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.0"
   }
 }
