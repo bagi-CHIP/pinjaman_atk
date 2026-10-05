@@ -1,219 +1,250 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin - Kelola ATK & Permintaan</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin ATK</title>
+  <!-- Library jsPDF & autoTable untuk Export PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h2, h3 { color: #333; margin-bottom: 15px; }
+    .form-inline { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .form-inline input, .form-inline select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
+    .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+    .btn-primary { background-color: #007bff; }
+    .btn-success { background-color: #28a745; }
+    .btn-danger { background-color: #dc3545; }
+    .btn-secondary { background-color: #6c757d; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; }
+    th { background-color: #f8f9fa; }
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
+    .badge-pending { background-color: #ffc107; color: #333; }
+    .badge-disetujui { background-color: #28a745; }
+    .badge-ditolak { background-color: #dc3545; }
+  </style>
 </head>
 <body>
 
-    <div class="container" style="max-width: 1000px;">
-        <h2>Panel Admin - Kelola ATK & Permintaan</h2>
+<div class="container">
+  <h2>Dashboard Admin - Pengelolaan ATK</h2>
 
-        <!-- BAGIAN 1: KELOLA STOK BARANG -->
-        <div class="card" style="margin-bottom: 30px; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
-            <h3>Kelola Stok Barang</h3>
-            <form id="formBarang" style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                <input type="text" id="kodeBarang" placeholder="Kode (misal: BRG-004)" style="flex: 1;">
-                <input type="text" id="namaBarang" placeholder="Nama Barang" required style="flex: 2;">
-                <input type="text" id="satuanBarang" placeholder="Satuan (pcs/unit)" style="flex: 1;">
-                <input type="number" id="stokBarang" placeholder="Stok" required min="0" style="flex: 1;">
-                <button type="submit" class="btn-primary">+ Tambah Barang</button>
-            </form>
+  <!-- Card Kelola Stok Barang -->
+  <div class="card">
+    <h3>Tambah & Kelola Stok Barang</h3>
+    <form class="form-inline" onsubmit="tambahBarang(event)">
+      <input type="text" id="nama_barang" placeholder="Nama Barang" required style="flex: 2;">
+      <input type="number" id="stok" placeholder="Jumlah Stok" min="0" required style="flex: 1;">
+      <input type="text" id="satuan" placeholder="Satuan (Pcs, Box, dll)" value="Pcs" required style="flex: 1;">
+      <button type="submit" class="btn btn-primary">+ Tambah Barang</button>
+    </form>
 
-            <table class="table" width="100%">
-                <thead>
-                    <tr>
-                        <th>Kode</th>
-                        <th>Nama Barang</th>
-                        <th>Satuan</th>
-                        <th>Stok</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyBarang">
-                    <tr><td colspan="5" style="text-align: center;">Memuat data barang...</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nama Barang</th>
+          <th>Stok Saat Ini</th>
+          <th>Satuan</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelAdminBarang">
+        <tr><td colspan="5">Memuat data barang...</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-        <!-- BAGIAN 2: DAFTAR PERMINTAAN MASUK -->
-        <div class="card" style="padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
-            <h3>Daftar Permintaan ATK Masuk</h3>
-            <table class="table" width="100%">
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Nama & Divisi</th>
-                        <th>Keperluan</th>
-                        <th>Item yang Diminta</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyPermintaan">
-                    <tr><td colspan="6" style="text-align: center;">Memuat daftar permintaan...</td></tr>
-                </tbody>
-            </table>
-        </div>
+  <!-- Card Kelola Permintaan ATK -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h3>Daftar Pengajuan ATK Pegawai</h3>
+      <button class="btn btn-secondary" onclick="exportPDF()">📄 Export PDF Laporan</button>
     </div>
 
-    <script>
-        // --- 1. LOGIKA KELOLA BARANG ---
-        async function muatStokBarang() {
-            try {
-                const res = await fetch('/api/barang');
-                const data = await res.json();
-                const body = document.getElementById('bodyBarang');
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Peminta</th>
+          <th>Divisi</th>
+          <th>Daftar Barang</th>
+          <th>Keperluan</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelAdminPeminjaman">
+        <tr><td colspan="7">Memuat data pengajuan...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-                if (data.length === 0) {
-                    body.innerHTML = '<tr><td colspan="5" style="text-align: center;">Belum ada barang di database</td></tr>';
-                    return;
-                }
+<script>
+  let dataPeminjamanCache = [];
 
-                body.innerHTML = '';
-                data.forEach(item => {
-                    body.innerHTML += `
-                        <tr>
-                            <td>${item.kode || '-'}</td>
-                            <td><strong>${item.nama}</strong></td>
-                            <td>${item.satuan || 'pcs'}</td>
-                            <td>
-                                <input type="number" value="${item.stok}" min="0" id="stok-${item.id}" style="width: 60px;">
-                                <button onclick="updateStok(${item.id})" style="background: #28a745; color: white; border: none; padding: 2px 6px; cursor: pointer;">Simpan</button>
-                            </td>
-                            <td>
-                                <button onclick="hapusBarang(${item.id})" style="background: #dc3545; color: white; border: none; padding: 4px 8px; cursor: pointer;">Hapus</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                console.error('Gagal memuat barang:', err);
-                document.getElementById('bodyBarang').innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Gagal mengambil data barang</td></tr>';
-            }
+  document.addEventListener('DOMContentLoaded', () => {
+    loadBarang();
+    loadPeminjaman();
+  });
+
+  // 1. Load Data Stok Barang
+  function loadBarang() {
+    fetch('/api/barang')
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.getElementById('tabelAdminBarang');
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">Belum ada barang di inventaris.</td></tr>';
+          return;
         }
 
-        // Tambah Barang Baru
-        document.getElementById('formBarang').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                kode: document.getElementById('kodeBarang').value,
-                nama: document.getElementById('namaBarang').value,
-                satuan: document.getElementById('satuanBarang').value || 'pcs',
-                stok: parseInt(document.getElementById('stokBarang').value)
-            };
-
-            const res = await fetch('/api/barang', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                document.getElementById('formBarang').reset();
-                muatStokBarang();
-            } else {
-                alert('Gagal menambah barang');
-            }
+        data.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.nama_barang}</td>
+            <td><strong>${item.stok}</strong></td>
+            <td>${item.satuan}</td>
+            <td>
+              <button class="btn btn-success" style="padding: 4px 8px;" onclick="updateStok(${item.id}, ${item.stok})">Edit Stok</button>
+              <button class="btn btn-danger" style="padding: 4px 8px;" onclick="hapusBarang(${item.id})">Hapus</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
         });
+      });
+  }
 
-        // Update Stok
-        async function updateStok(id) {
-            const stokBaru = parseInt(document.getElementById(`stok-${id}`).value);
-            const res = await fetch(`/api/barang/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stok: stokBaru })
-            });
+  // 2. Tambah Barang Baru
+  function tambahBarang(e) {
+    e.preventDefault();
+    const payload = {
+      nama_barang: document.getElementById('nama_barang').value,
+      stok: parseInt(document.getElementById('stok').value),
+      satuan: document.getElementById('satuan').value
+    };
 
-            if (res.ok) {
-                alert('Stok berhasil diperbarui!');
-                muatStokBarang();
-            } else {
-                alert('Gagal memperbarui stok');
-            }
+    fetch('/api/barang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      loadBarang();
+      e.target.reset();
+    });
+  }
+
+  // 3. Update Stok Barang
+  function updateStok(id, stokLama) {
+    const stokBaru = prompt('Masukkan jumlah stok baru:', stokLama);
+    if (stokBaru !== null && stokBaru !== '') {
+      fetch(`/api/barang/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stok: parseInt(stokBaru) })
+      }).then(() => loadBarang());
+    }
+  }
+
+  // 4. Hapus Barang
+  function hapusBarang(id) {
+    if (confirm('Yakin ingin menghapus barang ini dari inventaris?')) {
+      fetch(`/api/barang/${id}`, { method: 'DELETE' })
+        .then(() => loadBarang());
+    }
+  }
+
+  // 5. Load Data Permintaan
+  function loadPeminjaman() {
+    fetch('/api/peminjaman')
+      .then(res => res.json())
+      .then(data => {
+        dataPeminjamanCache = data;
+        const tbody = document.getElementById('tabelAdminPeminjaman');
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7">Belum ada pengajuan masuk.</td></tr>';
+          return;
         }
 
-        // Hapus Barang
-        async function hapusBarang(id) {
-            if (!confirm('Yakin ingin menghapus barang ini?')) return;
-            const res = await fetch(`/api/barang/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                muatStokBarang();
-            } else {
-                alert('Gagal menghapus barang');
-            }
-        }
+        data.forEach(item => {
+          let badgeClass = 'badge-pending';
+          if (item.status === 'Disetujui') badgeClass = 'badge-disetujui';
+          if (item.status === 'Ditolak') badgeClass = 'badge-ditolak';
 
-
-        // --- 2. LOGIKA KELOLA PERMINTAAN ---
-        async function muatPermintaan() {
-            try {
-                const res = await fetch('/api/peminjaman');
-                const data = await res.json();
-                const body = document.getElementById('bodyPermintaan');
-
-                if (data.length === 0) {
-                    body.innerHTML = '<tr><td colspan="6" style="text-align: center;">Belum ada permintaan masuk</td></tr>';
-                    return;
-                }
-
-                body.innerHTML = '';
-                data.forEach(p => {
-                    let itemsHtml = '-';
-                    try {
-                        const parsedItems = JSON.parse(p.items);
-                        if (Array.isArray(parsedItems)) {
-                            itemsHtml = parsedItems.map(i => `• ${i.nama_barang} (${i.jumlah})`).join('<br>');
-                        }
-                    } catch (e) {
-                        itemsHtml = p.items;
-                    }
-
-                    const badgeColor = p.status === 'Disetujui' ? 'green' : (p.status === 'Ditolak' ? 'red' : 'orange');
-
-                    body.innerHTML += `
-                        <tr>
-                            <td><small>${p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-'}</small></td>
-                            <td><strong>${p.nama_peminjam}</strong><br><small>(${p.divisi})</small></td>
-                            <td>${p.keperluan || '-'}</td>
-                            <td>${itemsHtml}</td>
-                            <td><b style="color: ${badgeColor};">${p.status || 'Pending'}</b></td>
-                            <td>
-                                <button onclick="ubahStatus(${p.id}, 'Disetujui')" style="background: #28a745; color: white; border: none; padding: 4px 6px; cursor: pointer; margin-bottom: 2px;">Setujui</button>
-                                <button onclick="ubahStatus(${p.id}, 'Ditolak')" style="background: #dc3545; color: white; border: none; padding: 4px 6px; cursor: pointer;">Tolak</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                console.error('Gagal memuat permintaan:', err);
-                document.getElementById('bodyPermintaan').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Gagal mengambil data permintaan</td></tr>';
-            }
-        }
-
-        // Ubah Status Permintaan
-        async function ubahStatus(id, status) {
-            const res = await fetch(`/api/peminjaman/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: status })
-            });
-
-            if (res.ok) {
-                muatPermintaan();
-            } else {
-                alert('Gagal mengubah status');
-            }
-        }
-
-        // Muat semua data saat halaman dibuka
-        document.addEventListener('DOMContentLoaded', () => {
-            muatStokBarang();
-            muatPermintaan();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${new Date(item.created_at).toLocaleDateString('id-ID')}</td>
+            <td>${item.nama_peminjam}</td>
+            <td>${item.divisi}</td>
+            <td>${item.items}</td>
+            <td>${item.keperluan}</td>
+            <td><span class="badge ${badgeClass}">${item.status}</span></td>
+            <td>
+              ${item.status === 'Pending' ? `
+                <button class="btn btn-success" style="padding: 4px 8px;" onclick="updateStatus(${item.id}, 'Disetujui')">Setujui</button>
+                <button class="btn btn-danger" style="padding: 4px 8px;" onclick="updateStatus(${item.id}, 'Ditolak')">Tolak</button>
+              ` : '-'}
+            </td>
+          `;
+          tbody.appendChild(tr);
         });
-    </script>
+      });
+  }
+
+  // 6. Update Status Permintaan
+  function updateStatus(id, status) {
+    fetch(`/api/peminjaman/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    }).then(() => {
+      loadPeminjaman();
+      loadBarang(); // Refresh stok jika ada perubahan
+    });
+  }
+
+  // 7. Export Laporan ke PDF
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.text('Laporan Riwayat Pengajuan ATK Kantor', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 22);
+
+    const tableRows = [];
+    dataPeminjamanCache.forEach(item => {
+      tableRows.push([
+        new Date(item.created_at).toLocaleDateString('id-ID'),
+        item.nama_peminjam,
+        item.divisi,
+        item.items,
+        item.keperluan,
+        item.status
+      ]);
+    });
+
+    doc.autoTable({
+      head: [['Tanggal', 'Peminta', 'Divisi', 'Items', 'Keperluan', 'Status']],
+      body: tableRows,
+      startY: 28
+    });
+
+    doc.save(`Laporan_ATK_${Date.now()}.pdf`);
+  }
+</script>
+
 </body>
 </html>
