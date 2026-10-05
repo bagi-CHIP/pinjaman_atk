@@ -1,196 +1,197 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulir Permintaan ATK</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengajuan ATK Kantor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h2 { color: #333; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+    input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .item-select-group { display: flex; gap: 10px; margin-bottom: 10px; }
+    .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+    .btn-primary { background-color: #007bff; }
+    .btn-success { background-color: #28a745; }
+    .btn-danger { background-color: #dc3545; }
+    .selected-items { margin-top: 10px; background: #e9ecef; padding: 10px; border-radius: 4px; }
+    .item-tag { display: inline-block; background: #007bff; color: white; padding: 5px 10px; border-radius: 20px; margin: 3px; font-size: 13px; }
+    .item-tag span { margin-left: 8px; cursor: pointer; font-weight: bold; color: #ffcccc; }
+    .stok-info { margin-top: 25px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Formulir Permintaan ATK</h2>
+<div class="container">
+  <h2>Form Pengajuan ATK Kantor</h2>
 
-        <form id="formPermintaan">
-            <div class="form-group">
-                <label>Nama Peminta:</label>
-                <input type="text" id="nama" required placeholder="Masukkan nama Anda">
-            </div>
-
-            <div class="form-group">
-                <label>Divisi / Bidang:</label>
-                <input type="text" id="divisi" required placeholder="Contoh: Keuangan, IT, Umum">
-            </div>
-
-            <div class="form-group">
-                <label>Keperluan:</label>
-                <textarea id="keperluan" rows="2" placeholder="Alasan peminjaman/permintaan"></textarea>
-            </div>
-
-            <hr>
-
-            <h3>Pilih Barang</h3>
-            <div class="form-group">
-                <label>Pilih Barang ATK:</label>
-                <select id="selectBarang">
-                    <option value="">-- Memuat Barang... --</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Jumlah:</label>
-                <input type="number" id="jumlahBarang" min="1" value="1">
-            </div>
-
-            <button type="button" class="btn-secondary" onclick="tambahItem()">+ Tambah ke Daftar List</button>
-
-            <h3>Daftar Item yang Diminta</h3>
-            <table class="table" id="tabelItem">
-                <thead>
-                    <tr>
-                        <th>Barang</th>
-                        <th>Jumlah</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyItem">
-                    <tr>
-                        <td colspan="3" style="text-align: center; color: #888;">Belum ada item ditambahkan</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">Kirim Permintaan</button>
-        </form>
+  <form id="formPeminjaman" onsubmit="submitForm(event)">
+    <div class="form-group">
+      <label for="nama_peminjam">Nama Peminta:</label>
+      <input type="text" id="nama_peminjam" required placeholder="Masukkan nama lengkap">
     </div>
 
-    <script>
-        let itemsDipilih = [];
-        let dataBarangLokal = [];
+    <div class="form-group">
+      <label for="divisi">Divisi / Bidang:</label>
+      <input type="text" id="divisi" required placeholder="Contoh: Keuangan, IT, Umum">
+    </div>
 
-        // Fungsi mengambil data barang terbaru dari server API
-        async function muatBarang() {
-            try {
-                const response = await fetch('/api/barang');
-                if (!response.ok) throw new Error('Gagal memuat barang');
-                
-                dataBarangLokal = await response.json();
-                const select = document.getElementById('selectBarang');
-                select.innerHTML = '<option value="">-- Pilih Barang --</option>';
+    <div class="form-group">
+      <label for="keperluan">Keperluan:</label>
+      <textarea id="keperluan" rows="2" required placeholder="Jelaskan keperluan penggunaan ATK"></textarea>
+    </div>
 
-                dataBarangLokal.forEach(barang => {
-                    if (barang.stok > 0) {
-                        const option = document.createElement('option');
-                        option.value = barang.id;
-                        option.textContent = `${barang.nama} (Stok: ${barang.stok} ${barang.satuan || 'pcs'})`;
-                        select.appendChild(option);
-                    }
-                });
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('selectBarang').innerHTML = '<option value="">Gagal memuat data barang</option>';
-            }
+    <div class="form-group">
+      <label>Pilih Barang ATK:</label>
+      <div class="item-select-group">
+        <select id="selectBarang">
+          <option value="">-- Pilih Barang --</option>
+        </select>
+        <input type="number" id="jumlahBarang" min="1" value="1" style="width: 80px;">
+        <button type="button" class="btn btn-primary" onclick="tambahItem()">+ Tambah</button>
+      </div>
+      
+      <div class="selected-items" id="selectedItemsContainer">
+        <small style="color: #6c757d;">Belum ada barang dipilih.</small>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 15px;">Kirim Pengajuan</button>
+  </form>
+
+  <div class="stok-info">
+    <h3>Daftar Ketersediaan Stok ATK</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Barang</th>
+          <th>Sisa Stok</th>
+          <th>Satuan</th>
+        </tr>
+      </thead>
+      <tbody id="tabelStokBody">
+        <tr><td colspan="3">Memuat data stok...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let itemsDipilih = [];
+
+  // Muat data barang dari server saat halaman dibuka
+  document.addEventListener('DOMContentLoaded', () => {
+    loadStokBarang();
+  });
+
+  function loadStokBarang() {
+    fetch('/api/barang')
+      .then(res => res.json())
+      .then(data => {
+        const select = document.getElementById('selectBarang');
+        const tbody = document.getElementById('tabelStokBody');
+        
+        select.innerHTML = '<option value="">-- Pilih Barang --</option>';
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3">Belum ada data barang.</td></tr>';
+          return;
         }
 
-        // Fungsi tambah item ke tabel sementara
-        function tambahItem() {
-            const select = document.getElementById('selectBarang');
-            const barangId = select.value;
-            const jumlah = parseInt(document.getElementById('jumlahBarang').value);
+        data.forEach(item => {
+          // Opsi Dropdown
+          if (item.stok > 0) {
+            const opt = document.createElement('option');
+            opt.value = `${item.nama_barang} (${item.stok} ${item.satuan})`;
+            opt.textContent = `${item.nama_barang} - Stok: ${item.stok} ${item.satuan}`;
+            select.appendChild(opt);
+          }
 
-            if (!barangId) {
-                alert('Silakan pilih barang terlebih dahulu!');
-                return;
-            }
-
-            const barang = dataBarangLokal.find(b => b.id == barangId);
-            if (!barang) return;
-
-            if (jumlah > barang.stok) {
-                alert(`Jumlah melebihi stok yang tersedia (${barang.stok} ${barang.satuan})`);
-                return;
-            }
-
-            // Cek apakah barang sudah ada di list
-            const ada = itemsDipilih.find(i => i.barang_id == barangId);
-            if (ada) {
-                ada.jumlah += jumlah;
-            } else {
-                itemsDipilih.push({
-                    barang_id: barang.id,
-                    nama_barang: barang.nama,
-                    jumlah: jumlah
-                });
-            }
-
-            renderTabelItem();
-        }
-
-        // Render tabel item sementara
-        function renderTabelItem() {
-            const body = document.getElementById('bodyItem');
-            if (itemsDipilih.length === 0) {
-                body.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #888;">Belum ada item ditambahkan</td></tr>';
-                return;
-            }
-
-            body.innerHTML = '';
-            itemsDipilih.forEach((item, index) => {
-                body.innerHTML += `
-                    <tr>
-                        <td>${item.nama_barang}</td>
-                        <td>${item.jumlah}</td>
-                        <td><button type="button" onclick="hapusItem(${index})" style="background:red; color:white; border:none; padding:4px 8px; cursor:pointer;">Hapus</button></td>
-                    </tr>
-                `;
-            });
-        }
-
-        function hapusItem(index) {
-            itemsDipilih.splice(index, 1);
-            renderTabelItem();
-        }
-
-        // Submit Form Permintaan
-        document.getElementById('formPermintaan').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            if (itemsDipilih.length === 0) {
-                alert('Harap tambahkan minimal 1 barang ke dalam daftar!');
-                return;
-            }
-
-            const payload = {
-                nama_peminjam: document.getElementById('nama').value,
-                divisi: document.getElementById('divisi').value,
-                keperluan: document.getElementById('keperluan').value,
-                items: JSON.stringify(itemsDipilih)
-            };
-
-            try {
-                const response = await fetch('/api/peminjaman', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    alert('Permintaan berhasil dikirim!');
-                    itemsDipilih = [];
-                    document.getElementById('formPermintaan').reset();
-                    renderTabelItem();
-                    muatBarang(); // Refresh stok
-                } else {
-                    alert('Gagal mengirim permintaan.');
-                }
-            } catch (error) {
-                console.error('Error submit:', error);
-                alert('Terjadi kesalahan saat mengubungi server.');
-            }
+          // Tabel Info Stok
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.nama_barang}</td>
+            <td><strong>${item.stok}</strong></td>
+            <td>${item.satuan}</td>
+          `;
+          tbody.appendChild(tr);
         });
+      });
+  }
 
-        // Jalankan otomatis saat halaman selesai dimuat
-        document.addEventListener('DOMContentLoaded', muatBarang);
-    </script>
+  function tambahItem() {
+    const select = document.getElementById('selectBarang');
+    const jumlahInput = document.getElementById('jumlahBarang');
+    
+    if (!select.value) {
+      alert('Pilih barang terlebih dahulu!');
+      return;
+    }
+
+    const itemText = `${select.value.split(' (')[0]} x${jumlahInput.value}`;
+    itemsDipilih.push(itemText);
+    renderSelectedItems();
+  }
+
+  function hapusItem(index) {
+    itemsDipilih.splice(index, 1);
+    renderSelectedItems();
+  }
+
+  function renderSelectedItems() {
+    const container = document.getElementById('selectedItemsContainer');
+    if (itemsDipilih.length === 0) {
+      container.innerHTML = '<small style="color: #6c757d;">Belum ada barang dipilih.</small>';
+      return;
+    }
+
+    container.innerHTML = itemsDipilih.map((item, idx) => `
+      <div class="item-tag">
+        ${item}
+        <span onclick="hapusItem(${idx})">&times;</span>
+      </div>
+    `).join('');
+  }
+
+  function submitForm(e) {
+    e.preventDefault();
+
+    if (itemsDipilih.length === 0) {
+      alert('Tambahkan minimal satu barang ATK yang ingin diajukan!');
+      return;
+    }
+
+    const payload = {
+      nama_peminjam: document.getElementById('nama_peminjam').value,
+      divisi: document.getElementById('divisi').value,
+      keperluan: document.getElementById('keperluan').value,
+      items: itemsDipilih.join(', ')
+    };
+
+    fetch('/api/peminjaman', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert('Pengajuan ATK berhasil dikirim!');
+      document.getElementById('formPeminjaman').reset();
+      itemsDipilih = [];
+      renderSelectedItems();
+    })
+    .catch(err => {
+      alert('Gagal mengirim pengajuan: ' + err.message);
+    });
+  }
+</script>
+
 </body>
 </html>
