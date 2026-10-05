@@ -2,12 +2,14 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-// Tentukan lokasi direktori berdasarkan environment
+// Tentukan direktori penyimpanan:
+// Jika berjalan di Railway (production), gunakan folder Volume (/app/data)
+// Jika di komputer lokal, gunakan folder tempat file ini berada
 const dbDir = process.env.NODE_ENV === 'production' 
   ? '/app/data' 
   : __dirname;
 
-// Pastikan direktori tempat database berada sudah dibuat sebelum file SQLite diakses
+// Buat direktori jika belum ada
 if (!fs.existsSync(dbDir)) {
   try {
     fs.mkdirSync(dbDir, { recursive: true });
@@ -28,6 +30,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
+// Inisialisasi tabel-tabel database
 db.serialize(() => {
   // Tabel Barang
   db.run(`
@@ -40,33 +43,20 @@ db.serialize(() => {
     )
   `);
 
-  // Tabel Peminjaman
+  // Tabel Peminjaman / Permintaan
   db.run(`
     CREATE TABLE IF NOT EXISTS peminjaman (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nomor_pinjam TEXT,
       nama_peminjam TEXT,
-      email TEXT,
-      bidang TEXT,
+      divisi TEXT,
       keperluan TEXT,
+      items TEXT,
       status TEXT DEFAULT 'Pending',
       tanggal DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  // Tabel Detail Item Peminjaman
-  db.run(`
-    CREATE TABLE IF NOT EXISTS detail_peminjaman (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      peminjaman_id INTEGER,
-      barang_id INTEGER,
-      jumlah INTEGER,
-      FOREIGN KEY(peminjaman_id) REFERENCES peminjaman(id),
-      FOREIGN KEY(barang_id) REFERENCES barang(id)
-    )
-  `);
-
-  // Isi data awal barang jika masih kosong
+  // Isi data awal barang jika tabel masih kosong
   db.get("SELECT COUNT(*) as count FROM barang", (err, row) => {
     if (err) {
       console.error("Gagal mengecek data barang:", err.message);
@@ -77,7 +67,9 @@ db.serialize(() => {
       stmt.run("BRG-001", "Laptop Probook", "unit", 5);
       stmt.run("BRG-002", "Proyektor Epson", "unit", 3);
       stmt.run("BRG-003", "Kabel HDMI 10m", "pcs", 10);
-      stmt.finalize();
+      stmt.finalize(() => {
+        console.log("Data awal barang berhasil ditambahkan.");
+      });
     }
   });
 });
