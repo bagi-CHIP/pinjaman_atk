@@ -1,9 +1,21 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+const dbPath = path.join(dataDir, 'peminjaman.db');
+
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Gagal terhubung ke database:', err.message);
+  } else {
+    console.log(`Terhubung ke database SQLite di: ${dbPath}`);
+  }
+});
 
 // Middleware
 app.use(express.json());
