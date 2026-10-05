@@ -6,9 +6,11 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Path untuk Railway Volume (atau folder lokal untuk pengujian/development)
 const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
 const dbPath = path.join(dataDir, 'peminjaman.db');
 
+// Inisialisasi Database SQLite
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Gagal terhubung ke database:', err.message);
@@ -22,16 +24,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inisialisasi Database
-const db = new sqlite3.Database('./peminjaman.db', (err) => {
-  if (err) {
-    console.error('Gagal terhubung ke database:', err.message);
-  } else {
-    console.log('Terhubung ke database SQLite (peminjaman.db).');
-  }
-});
-
-// Pembuatan Tabel
+// Pembuatan Tabel dan Data Awal
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS barang (
@@ -55,10 +48,10 @@ db.serialize(() => {
     )
   `);
 
-  // Data awal barang jika kosong
+  // Data awal barang jika tabel kosong
   db.get("SELECT COUNT(*) AS count FROM barang", (err, row) => {
     if (err) return;
-    if (row.count === 0) {
+    if (row && row.count === 0) {
       const stmt = db.prepare("INSERT INTO barang (kode, nama, satuan, stok) VALUES (?, ?, ?, ?)");
       stmt.run('ATK-001', 'Pen X Data Directfill Ballpoint Pen M-2', 'pcs', 10);
       stmt.run('ATK-002', 'Pen Signo', 'pcs', 10);
@@ -73,6 +66,8 @@ db.serialize(() => {
   });
 });
 
+// --- ENDPOINT API ---
+
 // Endpoint Ambil Daftar Barang
 app.get('/api/barang', (req, res) => {
   db.all("SELECT * FROM barang ORDER BY id ASC", [], (err, rows) => {
@@ -85,7 +80,6 @@ app.get('/api/barang', (req, res) => {
 app.post('/api/barang', (req, res) => {
   const { kode, nama, satuan, stok } = req.body;
   if (!nama || stok === undefined) return res.status(400).json({ message: 'Nama dan stok wajib diisi' });
-
   const query = `INSERT INTO barang (kode, nama, satuan, stok) VALUES (?, ?, ?, ?)`;
   db.run(query, [kode || null, nama, satuan || 'pcs', parseInt(stok)], function (err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -97,7 +91,6 @@ app.post('/api/barang', (req, res) => {
 app.put('/api/barang/:id', (req, res) => {
   const { id } = req.params;
   const { nama, stok, kode, satuan } = req.body;
-
   const query = `
     UPDATE barang 
     SET nama = COALESCE(?, nama), 
@@ -106,7 +99,6 @@ app.put('/api/barang/:id', (req, res) => {
         satuan = COALESCE(?, satuan) 
     WHERE id = ?
   `;
-
   db.run(query, [nama, parseInt(stok), kode, satuan, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Stok barang berhasil diperbarui' });
@@ -133,16 +125,13 @@ app.get('/api/peminjaman', (req, res) => {
 // Endpoint Simpan Permintaan ATK Baru
 app.post('/api/peminjaman', (req, res) => {
   const { nama_peminjam, divisi, keperluan, items } = req.body;
-
   if (!nama_peminjam || !divisi || !items) {
     return res.status(400).json({ message: 'Nama, Bidang/Divisi, dan Barang wajib diisi!' });
   }
-
   const query = `
-    INSERT INTO peminjaman (nama_peminjam, divisi, keperluan, items, status, created_at)
+    INSERT INTO peminjaman (nama_peminjam, divisi, keperluan, items, status, created_at) 
     VALUES (?, ?, ?, ?, 'Pending', datetime('now', 'localtime'))
   `;
-
   db.run(query, [nama_peminjam, divisi, keperluan || '', items], function (err) {
     if (err) {
       console.error('Database Error:', err.message);
@@ -156,7 +145,6 @@ app.post('/api/peminjaman', (req, res) => {
 app.put('/api/peminjaman/:id', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-
   if (!status) return res.status(400).json({ message: 'Status wajib diisi' });
 
   db.get("SELECT * FROM peminjaman WHERE id = ?", [id], (err, row) => {
@@ -164,20 +152,14 @@ app.put('/api/peminjaman/:id', (req, res) => {
 
     if (status === 'Disetujui' && row.status !== 'Disetujui') {
       const itemEntries = row.items.split(',');
-
       itemEntries.forEach(entry => {
         const match = entry.trim().match(/^(.+)\s+\((\d+)\s*.*\)$/);
         if (match) {
           const namaBarang = match[1].trim();
           const qty = parseInt(match[2]);
-
-          db.run(
-            "UPDATE barang SET stok = MAX(0, stok - ?) WHERE nama = ?",
-            [qty, namaBarang],
-            (err) => {
-              if (err) console.error(`Gagal potong stok ${namaBarang}:`, err.message);
-            }
-          );
+          db.run("UPDATE barang SET stok = MAX(0, stok - ?) WHERE nama = ?", [qty, namaBarang], (err) => {
+            if (err) console.error(`Gagal potong stok ${namaBarang}:`, err.message);
+          });
         }
       });
     }
@@ -189,7 +171,7 @@ app.put('/api/peminjaman/:id', (req, res) => {
   });
 });
 
-// Routes Halaman
+// --- ROUTES HALAMAN ---
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
